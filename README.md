@@ -44,6 +44,12 @@ The fact table depends on other 3 tables to be loaded, they are the `product` st
 
 After loading each of the facts and dimensions, a data quality is perfomed in fact table `product_sales`, in order to confirm that all the products have their unique ID.
 
+Below we have the dag structure:
+
+![DAG](dag_structure.png)
+_*Datbase schema close up to final tables.*_
+
+
 
 ## Files Structure
 
