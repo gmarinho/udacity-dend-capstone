@@ -116,6 +116,14 @@ load_fact_redshift = LoadFactOperator (
     table='product_sales',
     sql_query=SqlQueries.product_sales_insert)
 
+run_quality_checks = DataQualityOperator(
+    task_id='Run_data_quality_checks',
+    dag=dag,
+    redshift_conn_id='redshift',
+    sql_tests=['SELECT COUNT(*) FROM product_sales WHERE product_id IS NULL;', 'SELECT COUNT(*) FROM city_dim WHERE city_id IS NULL;'],
+    tests_results = [0,0],
+)
+
 end_operator = DummyOperator(task_id='Stop_execution',  dag=dag)
 
 start_operator >> create_tables_redshift
@@ -129,7 +137,8 @@ stage_ean_genuino_to_redshift >> load_times_redshift
 stage_produto_to_redshift >> load_fact_redshift
 stage_empresa_to_redshift >> load_fact_redshift
 stage_ean_genuino_to_redshift >> load_fact_redshift
-load_fact_redshift >> end_operator
+load_fact_redshift >> run_quality_checks
+run_quality_checks >> end_operator
 load_times_redshift >> end_operator
 load_cities_redshift >> end_operator
 load_categories_redshift >> end_operator

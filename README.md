@@ -49,6 +49,11 @@ Below we have the dag structure:
 ![DAG](dag_structure.png)
 _*Airflow Dag.*_
 
+## Scenarios study
+
+* The data was increased by 100x: The increase in the data would not be a problem, as the pipeline is daily and runs in less than 30 minutes.
+* The pipelines would be run on a daily basis by 7 am every day: It is already addressed in the current pipeline
+* The database needed to be accessed by 100+ people: Amazon Redshift already have the capability to scale on demand.
 
 
 ## Files Structure
