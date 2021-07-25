@@ -137,9 +137,9 @@ stage_ean_genuino_to_redshift >> load_times_redshift
 stage_produto_to_redshift >> load_fact_redshift
 stage_empresa_to_redshift >> load_fact_redshift
 stage_ean_genuino_to_redshift >> load_fact_redshift
+load_cities_redshift >> run_quality_checks
 load_fact_redshift >> run_quality_checks
 run_quality_checks >> end_operator
 load_times_redshift >> end_operator
-load_cities_redshift >> end_operator
 load_categories_redshift >> end_operator
 
