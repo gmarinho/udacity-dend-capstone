@@ -18,22 +18,36 @@ The four datasets are stored in S3 and are going to be copied from there to Reds
 
 The question the company needs to answer is how many unique product sales where made in one day, by city, and state. 
 
+The stage tables in Redshit have the following structure:
+![Final tables diagram](staging_tables.png.png)
+_*Datbase schema close up to stage tables.*_
+
 ## Database design
 
-The database designed implements a star schema, with 1 fact table and 4 dimensions. Our fact table `songplays` is the event of playing a song by any user, meanwhile the dimensions are:
-* `users` - Contains user information such as name, gender, and subscription type (paid or free)
-* `artists` - Contains artists information such as name, location
-* `songs` - Contains songs information such as title, artist id, duration, year
-* `time` - Contains timestamp information and its associated data, such as month, week, day, weekday, year, and hour
+The database designed implements a star schema, with 1 fact table and 3 dimensions. Our fact table `product_sales` is the total sales of a product by city, meanwhile the dimensions are:
+* `categories` - Contains product category information such as meat, fruits, sweets, beverage....
+* `time` - Contains dates only without the timestamp information
+* `city` - Contains cities information such as city code, state, and country
  
-![Final tables diagram](udacity_project_5.png)
+![Final tables diagram](star_schema.png)
 _*Datbase schema close up to final tables.*_
 
+## Airflow DAG
+
+The dag implemented creates all the necessary tables at the first stage, moving to stage of staging data from S3 to redshift. 
+
+A custom operator was created with the possibility to template the `s3_key` attribute, as the files containing all the products invoice of a day are organized by the date of export.
+
+After finishing the staging, it will start to load the dimensions and fact tables into redshift. The `city` and `categories` dimensions depends on their similar table at staging level.
+
+The fact table depends on other 3 tables to be loaded, they are the `product` stage table, `company report` and the invoice receipts table.
+
+After loading each of the facts and dimensions, a data quality is perfomed in fact table `product_sales`, in order to confirm that all the products have their unique ID.
 
 
 ## Files Structure
 
-* `udac_example_dag.py` - DAG setup
+* `udac_dag.py` - DAG setup
 * `create_tables.sql` - contains the SQL queries used to create the required tables in Redshift
 * `sql_queries.py` - contains the SQL queries used in the ETL process. It should be placed in the `plugins/helpers` directory of your Airflow installation.
 
@@ -46,5 +60,5 @@ For this project, personalized operators were created and they need to be placed
 ## Configuration
 
 * Make sure to add the following Airflow connections:
-    * AWS credentials
-    * Connection to Postgres database
+    * `aws_credentials` - Configure this Amazon Web Services connector with your access key and secret.
+    * `redshift` - Connection to the redshift cluster using the Postgres connector.
