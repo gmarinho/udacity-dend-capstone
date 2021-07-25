@@ -47,7 +47,7 @@ After loading each of the facts and dimensions, a data quality is perfomed in fa
 Below we have the dag structure:
 
 ![DAG](dag_structure.png)
-_*Datbase schema close up to final tables.*_
+_*Airflow Dag.*_
 
 
 
