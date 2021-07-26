@@ -47,7 +47,7 @@ Categories dimension:
 ![Category dimension documentation](categories_dict.png)
 
 Cities dimension:
-![City dimension documentation](cities_dict.png)
+![City dimension documentation](city_dict.png)
 
 Time dimension:
 ![Time dimension documentation](time_dict.png)
