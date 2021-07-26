@@ -20,7 +20,7 @@ For this project, the pinngo data is stored in S3, with the invoice infomation b
 The four datasets stored in S3 and are going to be copied from there to Redshift to be used as staging tables.
 
 The stage tables in Redshit have the following structure:
-![Final tables diagram](staging_tables.png.png)
+![Final tables diagram](staging_tables.png)
 _*Datbase schema close up to stage tables.*_
 
 ## Database design
@@ -40,6 +40,22 @@ The database designed implements a star schema, with 1 fact table and 3 dimensio
 ![Final tables diagram](star_schema.png)
 _*Datbase schema close up to final tables.*_
 
+
+### Final model data dictionary
+
+Categories dimension:
+![Category dimension documentation](categories_dict.png)
+
+Cities dimension:
+![City dimension documentation](cities_dict.png)
+
+Time dimension:
+![Time dimension documentation](time_dict.png)
+
+Product Sales Fact:
+![Product Sales fact table documentation](fact_dict.png)
+
+
 ## Technical implementation: Airflow and Redshift
 
 Apache Airflow, alongside with a Redshift data warehouse cluster were the technology choices for this project.
@@ -57,15 +73,32 @@ After finishing the staging, it will start to load the dimensions and fact table
 
 The fact table depends on other 3 tables to be loaded, they are the `product` stage table, `company report` and the invoice receipts table.
 
-After loading each of the facts and dimensions, a data quality is perfomed in fact table `product_sales`, in order to confirm that all the products have their unique ID.
+After loading each of the facts and dimensions, a data quality is perfomed in fact table `product_sales`, in order to confirm that all the products have their unique ID filled, as this will be necessary to associate their data with a company report.
 
-Also, a second test will be applied in the same fact table, to ensure that all the  `product_sales.total_sales` are greater than or equal to 0. 
+Also, a second test will be applied in the same fact table, any product present in the table of sales should have their sales quantity and volume greater than or equal to 0 at least. 
 
 Below we have the dag structure:
 
 ![DAG](dag_structure.png)
 _*Airflow Dag.*_
 
+
+## Example query and final data model check:
+
+To ensure that the kind of analysis requested by the business team is possible with this data model, the following query was executed:
+```
+/* All product sales by category and state */
+SELECT cd.category_name, cd2.state,SUM(total_sales) as Total_Sales, SUM(total_volume) as Total_Volume, ps.unit 
+FROM product_sales ps LEFT JOIN categories_dim cd 
+ON ps.category_id = cd.category_id
+JOIN city_dim cd2 ON  ps.city_id= cd2.city_id
+GROUP BY cd.category_name, cd2.state,  ps.unit
+ORDER BY cd.category_name, cd2.state
+
+```
+
+And the result was as expected:
+![Query result](query_result.png)
 ## Scenarios study
 
 * The data was increased by 100x: The increase in the data would not be a problem, the current pipeline is daily and finishes to run with 6 million lines in less than 30 minutes However, if still necessary, the cluster capacity could be increased in AWS and the airflow workers scalled using kubernets.
