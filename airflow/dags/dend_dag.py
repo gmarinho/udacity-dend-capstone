@@ -120,7 +120,7 @@ run_quality_checks = DataQualityOperator(
     task_id='Run_data_quality_checks',
     dag=dag,
     redshift_conn_id='redshift',
-    sql_tests=['SELECT COUNT(*) FROM product_sales WHERE product_id IS NULL;', 'SELECT COUNT(*) FROM city_dim WHERE city_id IS NULL;'],
+    sql_tests=['SELECT COUNT(*) FROM product_sales WHERE product_id IS NULL;', 'SELECT COUNT(*) FROM product_sales ps WHERE ps.total_sales <0'],
     tests_results = [0,0],
 )
 

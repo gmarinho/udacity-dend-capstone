@@ -9,20 +9,28 @@ as the end user scans the QR code present in supermarket bill receipts in Brazil
 
 With millions of products data everyday, Horus is able to understand the retail market in Brazil almost in real time, helping companies to address strategic decisions, in various department such as marketing, operations, sales and how to increase their market share.
 
+
 ## Data sources and staging
 
 The data used in this project is a subset of the original Pinngo app data.  We will use a 7 days window of product sales from users across Brazil, the database of products from Horus,
-a dataset from Nielsen with market categories, and a dataset of supermarket companies information (this one in JSON format).
+a dataset from Nielsen with market categories this one in JSON format), and a dataset of supermarket companies information.
 
-The four datasets are stored in S3 and are going to be copied from there to Redshift to be used as staging tables.
+For this project, the pinngo data is stored in S3, with the invoice infomation being partioned in csv for every day (a full day of data contains around 6 millions rows).
 
-The question the company needs to answer is how many unique product sales where made in one day, by city, and state. 
+The four datasets stored in S3 and are going to be copied from there to Redshift to be used as staging tables.
 
 The stage tables in Redshit have the following structure:
 ![Final tables diagram](staging_tables.png.png)
 _*Datbase schema close up to stage tables.*_
 
 ## Database design
+The question the company's business analyts needs to answer is how many unique product sales where made in one day, by city, and state. 
+
+For answering that,  the source data provided by the Pinngo app will be transformed in a starc schema, with the fact table being a sale of a single product.
+
+Associated with this fact table will be information regarding the city, collected by the company information in the invoice, the category of the product (to provide slices for this kind of analysis) and a time information.
+
+The final data is aggregated by day, as the analyts and Horus do not measure intraday variations.
 
 The database designed implements a star schema, with 1 fact table and 3 dimensions. Our fact table `product_sales` is the total sales of a product by city, meanwhile the dimensions are:
 * `categories` - Contains product category information such as meat, fruits, sweets, beverage....
@@ -32,8 +40,15 @@ The database designed implements a star schema, with 1 fact table and 3 dimensio
 ![Final tables diagram](star_schema.png)
 _*Datbase schema close up to final tables.*_
 
-## Airflow DAG
+## Technical implementation: Airflow and Redshift
 
+Apache Airflow, alongside with a Redshift data warehouse cluster were the technology choices for this project.
+
+Airflow provides a powerful tool for the ELT process, alowing a quick monitoring and , with the user of custom operators and connectors, the capability of connecting to various sources in a single framework.
+
+Amazon redshift is a columnar distirbuted database that provides robustness and perfomance to a data warehouse. The infrastructure could be used to host several datamarts and other analytics tools that the company will build in the future.
+
+## Airflow DAG structure:
 The dag implemented creates all the necessary tables at the first stage, moving to stage of staging data from S3 to redshift. 
 
 A custom operator was created with the possibility to template the `s3_key` attribute, as the files containing all the products invoice of a day are organized by the date of export.
@@ -44,6 +59,8 @@ The fact table depends on other 3 tables to be loaded, they are the `product` st
 
 After loading each of the facts and dimensions, a data quality is perfomed in fact table `product_sales`, in order to confirm that all the products have their unique ID.
 
+Also, a second test will be applied in the same fact table, to ensure that all the  `product_sales.total_sales` are greater than or equal to 0. 
+
 Below we have the dag structure:
 
 ![DAG](dag_structure.png)
@@ -51,9 +68,10 @@ _*Airflow Dag.*_
 
 ## Scenarios study
 
-* The data was increased by 100x: The increase in the data would not be a problem, as the pipeline is daily and runs in less than 30 minutes.
+* The data was increased by 100x: The increase in the data would not be a problem, the current pipeline is daily and finishes to run with 6 million lines in less than 30 minutes However, if still necessary, the cluster capacity could be increased in AWS and the airflow workers scalled using kubernets.
 * The pipelines would be run on a daily basis by 7 am every day: It is already addressed in the current pipeline
-* The database needed to be accessed by 100+ people: Amazon Redshift already have the capability to scale on demand.
+* The database needed to be accessed by 100+ people: Amazon Redshift already have the capability to scale on demand as mentioned before. Also, to optmize the current setup, the fact table city_id column could be used as a distribution column. Considered that prices and sales volume are usually compared within a location.
+
 
 
 ## Files Structure
